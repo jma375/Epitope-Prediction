@@ -68,8 +68,8 @@ All the models were first evaluated on the holdout set and then evaluated using 
 
 ## Getting Started
 1. Clone this repo (for help see this [tutorial](https://help.github.com/articles/cloning-a-repository/)).
-2. Raw Data is being kept [here](Repo folder containing raw data) within this repo. 
-3. Data processing/transformation and modelling scripts are being kept [here](Repo folder containing data processing scripts/notebooks)
+2. Raw Data is being kept (https://www.kaggle.com/futurecorporation/epitope-prediction)
+3. Data processing/transformation and modelling scripts are being kept (https://github.com/jma375/Epitope-Prediction/blob/main/EpitopePrediction.Rmd)
 
 ## Featured Notebooks/Analysis/Deliverables
 * Deck (https://github.com/jma375/Epitope-Prediction/blob/main/epitopepredictionslides.pdf)
