@@ -73,7 +73,7 @@ All the models were first evaluated on the holdout set and then evaluated using 
 
 ## Featured Notebooks/Analysis/Deliverables
 * Deck (Repo link)
-* Report (Repo link)
+* Report (https://github.com/jma375/Epitope-Prediction/blob/main/EpitopePredictionPaper.pdf)
 * Code (https://github.com/jma375/Epitope-Prediction/blob/main/EpitopePrediction.Rmd)
 
 
