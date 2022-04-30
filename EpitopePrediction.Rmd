@@ -1,0 +1,518 @@
+---
+title: "Statlearn_Project_1"
+output:
+pdf_document: default
+html_document: default
+---
+
+
+STEP 1: Reading the Data in csv format
+
+The dataset contains three files:
+input_bcell.csv : this is the main SARS_BCELLing data. The number of rows is 14387 for all combinations of 14362 peptides and 757 proteins.
+input_sars.csv : this is also the main SARS_BCELLing data. The number of rows is 520.
+input_covid.csv : this is our unseen data. there is no label data in columns. We will use this dataset for future prediction
+
+We will combine input_bcell.csv and input_sars.csv data for SARS_BCELLing and validation, reporting accuracy and other evaluation metrics.
+
+We can use input_covid.csv for future prediction since the target variable is not available. (We will not use this data for our project)
+
+NOTE: Change "path" variable to user's path 
+```{r}
+rm(list = ls())
+
+#path = "/Users/riyaagrawal/Documents/Biostats/project_1"
+
+#BCELL data
+path = "/Users/jamesalfano/Desktop/Grad School/Stat Learning/Statlearn_COVID_data/input_bcell.csv"
+BCELL = read.csv(path,header = TRUE)
+dim(BCELL)
+```
+
+```{r}
+#SARS data
+path = "/Users/jamesalfano/Desktop/Grad School/Stat Learning/Statlearn_COVID_data/input_sars.csv"
+SARS = read.csv(path,header = TRUE)
+dim(SARS)
+```
+
+We will combine SARS and BCell data sets for SARS_BCELLing and validation
+```{r}
+SARS_BCELL = rbind(SARS,BCELL)
+SARS_BCELL$target=as.factor(SARS_BCELL$target) #Make target value a factor
+dim(SARS_BCELL)
+```
+
+There are 14907 rows and 14 columns in the data.
+
+```{r}
+# Check names of the variables
+colnames(SARS_BCELL)
+```
+
+```{r}
+# Check the data
+head(SARS_BCELL)
+```
+
+NOTE: Given the length of the data points containing lists (Specifically the genetic sequences), R cannot print out a head of the data. 
+
+
+Moving ahead, we will not consider the variables which give identity information, for modeling. These variables are:
+
+*parent_protein_id (parent protein ID): identifier
+
+*protein_seq (parent protein sequence): sequence name and is unique in nature
+
+*start_position (start position of peptide): unique identifier of start position
+
+*end_position (end position of peptide): unique identifier of end position
+
+*peptide_seq (peptide sequence): sequence name and is unique in nature
+
+
+
+STEP 2: Experimental Data Analysis (EDA)
+
+Checking for missing Data
+```{r}
+colSums(is.na(SARS_BCELL))
+```
+There is no missing data in the data set
+
+Lets look at the summary of the SARS_BCELL data
+```{r}
+summary(SARS_BCELL)
+```
+
+The columns 'emini' and 'stability' may contain outliers.
+
+
+Remove the outliers from the dataset for 'emini' using interquartile range.
+```{r}
+#find Q1, Q3, and interquartile range for values in column 'emini'
+Q1 = quantile(SARS_BCELL$emini, .25)
+Q3 = quantile(SARS_BCELL$emini, .75)
+IQR = IQR(SARS_BCELL$emini)
+
+#only keep rows in dataframe that have values within 3.0*IQR of Q1 and Q3
+SARS_BCELL= subset(SARS_BCELL, SARS_BCELL$emini> (Q1 - 3.0*IQR) & SARS_BCELL$emini< (Q3 + 3.0*IQR))
+
+dim(SARS_BCELL)
+```
+
+Out of 14907 rows, 14265 rows are remaining.
+
+Remove the outliers from the dataset for 'stability' using interquartile range.
+```{r}
+#find Q1, Q3, and interquartile range for values in column 'stability'
+Q1 = quantile(SARS_BCELL$stability, .25)
+Q3 = quantile(SARS_BCELL$stability, .75)
+IQR = IQR(SARS_BCELL$stability)
+
+#only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+SARS_BCELL = subset(SARS_BCELL, SARS_BCELL$stability > (Q1 - 3.0*IQR) & SARS_BCELL$stability < (Q3 + 3.0*IQR))
+
+dim(SARS_BCELL)
+```
+
+Out of 14265 rows, 14187 rows are remaining.
+
+
+Calculate the correlation between the different attributes
+```{r}
+cor(SARS_BCELL[,c("chou_fasman","emini","kolaskar_tongaonkar","parker","isoelectric_point","aromaticity","hydrophobicity",  "stability")]) #correlation between different attributes
+```
+
+There no strong correlation between the predictor variables.
+
+
+Check the Distribution of Target Variable (In the SARS_BCELL dataset)
+```{r}
+library(ggplot2)
+qplot(SARS_BCELL$target, geom="bar")
+```
+There are more than double the amount of Negative (0) cases than there are Positive (1) cases (10418 Negative, 3769 Positive).
+Re-sampling will most likely be required.
+
+
+Use upsampling to make positive class instances equal to negative class instances
+```{r}
+#library groupdata2 is used for upsampling
+library(groupdata2)
+
+SARS_BCELL=upsample(SARS_BCELL, cat_col = "target")
+```
+
+```{r}
+dim(SARS_BCELL)
+```
+
+Now, the dataset has 20836 rows and 14 columns
+
+Check the Distribution of Target Variable (In the SARS_BCELL dataset)
+```{r}
+library(ggplot2)
+qplot(SARS_BCELL$target, geom="bar")
+```
+
+The dataset has equal positive and negative instances.
+
+
+EDA Findings:  
+1. There are numeric and character values present in the data set.
+
+2. The COVID data set does not have a "Target" Value. We will not be able to report testing accuracy/error metrics for this data set
+
+3. The "target" value is skewed in the SARS_BCELL dataset. Upsampling is used to balance the classes.
+
+4. The columns 'emini' and 'stability' contain outliers. The max value is much larger then the 3rd Quartile. This is suspicious and the rows containing outliers are removed from the dataset.
+
+
+
+STEP 3: training and testing data
+
+Since the COVID data set does not have a "Target" Value, we can not report testing accuracy/error metrics. Thus will we create a training and testing set from the known "SARS_BCELL" dataset.
+
+
+First split SARS_BCELL into train and test using 80:20 ratio
+```{r}
+library(caTools)
+set.seed(123)
+#Here we will use a 80/20 split for testing and training
+sample = sample.split(SARS_BCELL, SplitRatio = .80)
+SARSBCELL_train = subset(SARS_BCELL, sample == TRUE)
+SARSBCELL_test  = subset(SARS_BCELL, sample == FALSE)
+```
+
+```{r}
+print(paste0("Number of samples used for training: ", dim(SARSBCELL_train)[1]))
+```
+
+```{r}
+print(paste0("Number of samples used for testing: ", dim(SARSBCELL_test)[1]))
+```
+
+
+STEP 4: Building the models 
+
+Build a logistic regression model including all the input variables as base model
+
+Fit logistic model on the training set
+```{r}
+# Predict Direction using all input variables 
+# glm(): generalized linear models
+# family=binomial: indicates that it is a logistic regression
+glm.fits = glm(target~chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability,
+               data = SARSBCELL_train, family = binomial)
+summary(glm.fits)
+```
+
+
+Predict on test set
+```{r}
+glm.probs=predict(glm.fits, SARSBCELL_test, type="response")
+glm.probs[1:10]
+```
+
+constrasts(): allows us to know which probability we are calculating
+```{r}
+contrasts(as.factor(SARSBCELL_train$target))
+```
+
+
+Initialize vector with 4464 elements
+```{r}
+glm.pred = rep(0, 4464)
+```
+
+Assign 1 to probabilities > 0.5
+```{r}
+glm.pred[glm.probs >.5]= 1 
+```
+
+table(): provides the confusion matrix
+```{r}
+table(glm.pred, SARSBCELL_test$target)
+```
+
+Compute the fraction for which our prediction was correct
+```{r}
+mean(glm.pred==SARSBCELL_test$target)
+```
+
+Compute F1-score for the predictions
+```{r}
+#Library MLmetrics is used to compute F1-score
+library(MLmetrics)
+```
+
+```{r}
+F1_Score(glm.pred,SARSBCELL_test$target)
+```
+
+The confusion matrix show that the model doesn't work well on the predicting target. Overall accuracy is only 60% 
+
+
+Use k-fold CV for cross-validation and get the accuracy on the data
+```{r}
+# use k=10
+library(boot)
+set.seed(17)
+cv.error.10=rep(0,10)
+for (i in 1:10){
+  glm.fit=glm(target~chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability,
+               data = SARSBCELL_train, family = binomial)
+  cv.error.10[i]=cv.glm(SARSBCELL_train,glm.fit,K=10)$delta[1]
+}
+cv.error.10
+```
+
+Get the average error rate
+```{r}
+mean(cv.error.10)
+```
+
+Cross validation gives the accuracy of 77%.
+
+---------------------------------------------------------------------------------------------------------
+
+Build a KNN model testing two different Ks
+
+```{r}
+library(class)
+```
+
+separate the test and train data into X variables and the outcome Class using cbind(): column bind
+```{r}
+train.X = SARSBCELL_train[,c("chou_fasman","emini","kolaskar_tongaonkar","parker","isoelectric_point","aromaticity",
+                             "hydrophobicity","stability")]
+test.X =SARSBCELL_test[,c("chou_fasman","emini","kolaskar_tongaonkar","parker","isoelectric_point","aromaticity",
+                             "hydrophobicity","stability")]
+train.target = SARSBCELL_train$target
+```
+
+train and test KNN with K= sqrt(N), where N is the total number of samples
+```{r}
+set.seed(123)
+knn.pred = knn(train.X, test.X, train.target, k=sqrt(nrow(SARSBCELL_train)))
+```
+
+table(): provides the confusion matrix
+```{r}
+table(knn.pred, SARSBCELL_test$target)
+```
+
+Compute the fraction for which our prediction was correct
+```{r}
+mean(knn.pred==SARSBCELL_test$target)
+```
+
+```{r}
+F1_Score(knn.pred,SARSBCELL_test$target)
+```
+
+Tune the hyper-parameter k using 10 fold cross validation
+```{r}
+library(caret)
+ctrl = trainControl(method="cv",10)  
+knnFit = train(target~chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability,
+               data = SARSBCELL_train, method = "knn", 
+                trControl = ctrl, preProcess = c("center","scale"))
+knnFit
+```
+
+k=5 gives highest accuracy.
+
+train the KNN with K=5 using cross validation
+```{r}
+set.seed(123)
+knn.pred.cv = knn(train.X, test.X, train.target, k=5)
+```
+
+table(): provides the confusion matrix
+```{r}
+table(knn.pred.cv, SARSBCELL_test$target)
+```
+
+Compute the fraction for which our prediction was correct
+```{r}
+mean(knn.pred.cv==SARSBCELL_test$target)
+```
+
+```{r}
+F1_Score(knn.pred.cv,SARSBCELL_test$target)
+```
+
+KNN model performs better than logistic regression, about 10% increase in the accuracy but the performance is still not good.
+
+---------------------------------------------------------------------------------------------
+
+
+Random Forest
+
+# By default randomForest() uses m=p/3 for regression and m=sqrt(p) for classification
+# Let's try m=8
+```{r}
+library(randomForest)
+```
+
+```{r}
+set.seed(1)
+rf=randomForest(target~chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability,data = SARSBCELL_train,mtry=8,importance =T)
+yhat.rf = predict(rf,newdata=SARSBCELL_test)
+```
+
+table(): provides the confusion matrix
+```{r}
+table(yhat.rf, SARSBCELL_test$target)
+```
+
+Compute the fraction for which our prediction was correct
+```{r}
+mean(yhat.rf==SARSBCELL_test$target)
+```
+
+# To pick the best m we can use CV
+```{r}
+bag.cv=rfcv(trainx=SARSBCELL_train[,c("chou_fasman","emini","kolaskar_tongaonkar","parker","isoelectric_point","aromaticity",
+                             "hydrophobicity","stability")],trainy=SARSBCELL_train$target,cv.fold = 10)
+bag.cv$n.var
+bag.cv$error.cv
+plot(bag.cv$n.var, bag.cv$error.cv)
+```
+
+Re-run the model using best m
+```{r}
+set.seed(1)
+rf=randomForest(target~chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability,
+               data = SARSBCELL_train,mtry=4,importance =T)
+yhat.rf = predict(rf,newdata=SARSBCELL_test)
+```
+
+table(): provides the confusion matrix
+```{r}
+table(yhat.rf, SARSBCELL_test$target)
+```
+
+Compute the fraction for which our prediction was correct
+```{r}
+mean(yhat.rf==SARSBCELL_test$target)
+```
+
+Compute F1-score
+```{r}
+F1_Score(yhat.rf,SARSBCELL_test$target)
+```
+
+The accuracy is much higher as compared to knn and logistic regression. The accuracy is 92% which is fairly acceptable.
+
+# importance(): view the importance of each variable
+# %IncMSE: mean decrease of accuracy in predictions on the OOB samples when a 
+# given variable is excluded from the model
+# IncNodeImpurity: total decrease in node impurity that results from splits over
+# that variable, averaged over all trees (RSS in regr. vs. deviance in class.)
+```{r}
+importance(rf)
+```
+
+# varImpPlot(): Variance importance plot
+```{r}
+varImpPlot(rf)
+```
+
+----------------------------------------------------------------------------------------------
+
+Boosting Model
+
+# gbm: library for boosting
+```{r}
+library(gbm)
+```
+
+```{r}
+set.seed(1)
+# Since this is a classification problem, we would use "bernoulli" distribution
+# n.trees: number of trees we want
+# interaction.depth: limits the depth of each tree
+boost=gbm(as.character(target)~chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability,
+               data = SARSBCELL_train,distribution="bernoulli",n.trees=500, interaction.depth=4)
+yhat.boost=predict(boost,newdata=SARSBCELL_test,n.trees=500,type = "response")
+```
+
+# Performance on the test set
+
+table(): provides the confusion matrix
+```{r}
+yhat.boost_ = levels(SARSBCELL_test$target)[1+(yhat.boost>0.5)]
+table(yhat.boost_, as.character(SARSBCELL_test$target))
+```
+
+Compute the fraction for which our prediction was correct
+```{r}
+mean(yhat.boost_==as.character(SARSBCELL_test$target))
+```
+
+Accuracy is just 80% which is less than the random forest model
+
+# We can set the shrinkage parameter (i.e., lambda). Default value: 0.001
+```{r}
+boost=gbm(as.character(target)~chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability,
+               data = SARSBCELL_train,distribution="bernoulli",n.trees=500, interaction.depth=4,shrinkage=0.2,verbose=F)
+yhat.boost=predict(boost,newdata=SARSBCELL_test,n.trees=500,type = "response")
+```
+
+table(): provides the confusion matrix
+```{r}
+yhat.boost_ = levels(SARSBCELL_test$target)[1+(yhat.boost>0.5)]
+table(yhat.boost_, as.character(SARSBCELL_test$target))
+```
+
+Compute the fraction for which our prediction was correct
+```{r}
+mean(yhat.boost_==as.character(SARSBCELL_test$target))
+```
+
+Accuracy increased slightly with shrinkage parameter, lambda=0.2
+
+# Perform cross-validation
+# cv.folds: Number of cross-validation folds to perform (default = 0)
+# If cv.folds>1 then gbm, in addition to the usual fit, will perform a cross-validation,
+# calculate an estimate of generalization error returned in cv.error
+```{r}
+boost=gbm(as.character(target)~chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability,
+               data = SARSBCELL_train,distribution="bernoulli", cv.folds=10, n.trees=1000, interaction.depth=4,shrinkage=0.2,verbose=F)
+yhat.boost=predict(boost,newdata=SARSBCELL_test,n.trees=1000,type = "response")
+
+```
+
+table(): provides the confusion matrix
+```{r}
+yhat.boost_ = levels(SARSBCELL_test$target)[1+(yhat.boost>0.5)]
+table(yhat.boost_, as.character(SARSBCELL_test$target))
+```
+
+Compute the fraction for which our prediction was correct
+```{r}
+mean(yhat.boost_==as.character(SARSBCELL_test$target))
+```
+
+Compute F1-score
+```{r}
+F1_Score(as.character(SARSBCELL_test$target),yhat.boost_)
+```
+
+boosting models do not give a very good accuracy. The accuracy obtained after cv is just 84% while in random forest we saw that accuracy is about 92%
+
+Now, we will make a prediction on covid-19 data using random forest model (best accuracy model)
+
+```{r}
+#COVID data
+path = "/Users/jamesalfano/Desktop/Grad School/Stat Learning/Statlearn_COVID_data/input_covid.csv"
+COVID = read.csv(path,header = TRUE)
+dim(COVID)
+```
+
+```{r}
+covid_yhat = predict(rf,newdata=COVID)
+```
