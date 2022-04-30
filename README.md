@@ -72,7 +72,7 @@ All the models were first evaluated on the holdout set and then evaluated using 
 3. Data processing/transformation and modelling scripts are being kept [here](Repo folder containing data processing scripts/notebooks)
 
 ## Featured Notebooks/Analysis/Deliverables
-* Deck (Repo link)
+* Deck (https://github.com/jma375/Epitope-Prediction/blob/main/epitopepredictionslides.pdf)
 * Report (https://github.com/jma375/Epitope-Prediction/blob/main/EpitopePredictionPaper.pdf)
 * Code (https://github.com/jma375/Epitope-Prediction/blob/main/EpitopePrediction.Rmd)
 
