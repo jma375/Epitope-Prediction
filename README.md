@@ -3,7 +3,7 @@ CSC687-R Final Project
 
 
 # Project Name
-This project is a part of the CSC687-R Statistical Learning Final Project at University of Miami.
+This project is a part of the CSC687-R Statistical Learning Final Project at The University of Miami.
 
 #### -- Project Status: [Completed]
 
