@@ -25,7 +25,7 @@ The purpose of this project is to predict, using binary classification, whether 
 * MS Office
 
 ## Needs of this project
-- dataset:
+
 The dataset for this project has been taken from Kaggle: https://www.kaggle.com/futurecorporation/epitope-prediction
 The dataset contains three files with no missing values:
 input_bcell.csv: this is the main training data. The number of rows is 14,387 for all combinations of 14,362 peptides and 757 proteins.
