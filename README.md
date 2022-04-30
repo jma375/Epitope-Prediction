@@ -3,7 +3,7 @@ CSC687-R Final Project
 
 
 # Project Name
-This project is a part of the CSC687-R Final Project at University of Miami.
+This project is a part of the CSC687-R Statistical Learning Final Project at University of Miami.
 
 #### -- Project Status: [Completed]
 
@@ -56,21 +56,10 @@ start_position (start position of peptide): the unique identifier of start posit
 end_position (end position of peptide): the unique identifier of the end position
 peptide_seq (peptide sequence): sequence name and is unique in nature
 
-- data exploration/descriptive statistics:
-The objective of data exploration is to better understand the data by performing statistical analysis and creating visual plots for the data.
-
-- data processing/cleaning
-Removing missing values, removing outliers and balancing the data using upsampling
-
-- machine learning modeling
-Classification Models 
-
-- writeup/reporting
-
 ## Project Description
 The data was first subjected to experimental data analysis to better understand the data by performing statistical analysis and creating visual plots for the data. The first step was to check for missing values and to address it, if present. The next step was to look at a summary/plot of the variables. Check for the presence of outliers and whether the data is balanced. Once the issues were identified they were treated accordingly. 
 
-It was also identified, during the EDA, that the COVID-19 data set does not contain the target value. Thus, the models were evaluated on the combined SARS and b-cell data set. To combat this, a small holdout set was created from the combined B-cell and SARS dataset to be able to report metrics. The holdout set uses approximately 20% of the available B-cell and SARS data. Specifically, 11,712 samples are used for training and 3,195 samples are used for testing.
+It was also identified, during the EDA, that the COVID-19 data set does not contain the target value. Thus, evaluation metrics could not be reported for this data set. To combat this, a small holdout set was created from the combined B-cell and SARS dataset to be able to report metrics. The holdout set uses approximately 20% of the available B-cell and SARS data. Specifically, 11,712 samples are used for training and 3,195 samples are used for testing.
 
 Four models were chosen for the classification: logistic regression; k-nearest neighbor (KNN); random forest; and gradient boosting machine (GBM). 
 Logistic regression serves as a baseline model. For this project, two KNN classification models were built with different values of k: sqrt(n) and 5 (where n is the number of samples). The random forest model was applied with the optimal value of mtry. The GBM model was also applied.
