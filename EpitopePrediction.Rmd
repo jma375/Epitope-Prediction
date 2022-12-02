@@ -1,6 +1,6 @@
 ---
 title: "Statlearn_Project_1"
-output:
+output: rmarkdown::github_document
 pdf_document: default
 html_document: default
 ---
@@ -24,14 +24,14 @@ rm(list = ls())
 #path = "/Users/riyaagrawal/Documents/Biostats/project_1"
 
 #BCELL data
-path = "/Users/jamesalfano/Desktop/Grad School/Stat Learning/Statlearn_COVID_data/input_bcell.csv"
+path = "/Users/jamesalfano/Desktop/Grad School/spring 2022/Stat Learning/Statlearn_COVID_data/input_bcell.csv"
 BCELL = read.csv(path,header = TRUE)
 dim(BCELL)
 ```
 
 ```{r}
 #SARS data
-path = "/Users/jamesalfano/Desktop/Grad School/Stat Learning/Statlearn_COVID_data/input_sars.csv"
+path = "/Users/jamesalfano/Desktop/Grad School/spring 2022/Stat Learning/Statlearn_COVID_data/input_sars.csv"
 SARS = read.csv(path,header = TRUE)
 dim(SARS)
 ```
@@ -508,7 +508,7 @@ Now, we will make a prediction on covid-19 data using random forest model (best 
 
 ```{r}
 #COVID data
-path = "/Users/jamesalfano/Desktop/Grad School/Stat Learning/Statlearn_COVID_data/input_covid.csv"
+path = "/Users/jamesalfano/Desktop/Grad School/spring 2022/Stat Learning/Statlearn_COVID_data/input_covid.csv"
 COVID = read.csv(path,header = TRUE)
 dim(COVID)
 ```
